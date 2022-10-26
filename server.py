@@ -1,12 +1,16 @@
 import socket
 import threading
+import sys
+import argparse
 from util import info
 
-localIP = "127.0.0.1"
-localPort = 35493
+parser = argparse.ArgumentParser()
+parser.add_argument('--local', default='127.0.0.1:35493')
+parser.add_argument('--server', default='127.0.0.1:20002')
 
-serverIP = "127.0.0.1"
-serverPort = 20002
+(localIP, localPort) = parser.parse_args(sys.argv[1:]).local.split(':')
+(serverIP, serverPort) = parser.parse_args(sys.argv[1:]).server.split(':')
+
 
 TIMEOUT = 10
 bufferSize = 1500
@@ -30,7 +34,7 @@ def handle_tcp_packet(connection: socket.socket, connection_address: str):
 
             with UDPClientLock:
                 info(f'Sending UDP from {connection_address} to {serverIP}:{serverPort}')
-                UDPClientSocket.sendto(data, (serverIP, serverPort))
+                UDPClientSocket.sendto(data, (serverIP, int(serverPort)))
                 udp_data = UDPClientSocket.recvfrom(bufferSize)[0]
                 info(f'UDP packet of {connection_address} received from {serverIP}:{serverPort}')
 
@@ -40,7 +44,7 @@ def handle_tcp_packet(connection: socket.socket, connection_address: str):
 
 def main():
     info('Started')
-    TCPServerSocket.bind((localIP, localPort))
+    TCPServerSocket.bind((localIP, int(localPort)))
     TCPServerSocket.listen()
     info(f'Listening on {localIP}:{localPort}')
     while True:

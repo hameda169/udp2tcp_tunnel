@@ -1,14 +1,17 @@
 import socket
+import sys
 import threading
 import time
+import argparse
 
 from util import info
 
-localIP = "127.0.0.1"
-localPort = 20001
+parser = argparse.ArgumentParser()
+parser.add_argument('--local', default='127.0.0.1:20001')
+parser.add_argument('--server', default='127.0.0.1:35493')
 
-serverIP = "127.0.0.1"
-serverPort = 35493
+(localIP, localPort) = parser.parse_args(sys.argv[1:]).local.split(':')
+(serverIP, serverPort) = parser.parse_args(sys.argv[1:]).server.split(':')
 
 bufferSize = 1500
 
@@ -24,7 +27,7 @@ def create_connect_tcp_socket() -> socket.socket:
         new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             info(f'Connecting to {serverIP}:{serverPort}')
-            new_socket.connect((serverIP, serverPort))
+            new_socket.connect((serverIP, int(serverPort)))
         except ConnectionRefusedError:
             time.sleep(1)
             continue
@@ -65,7 +68,7 @@ def main():
     info('Started')
     TCPClientSocket = create_connect_tcp_socket()
     info(f'TCP connected to {serverIP}:{serverPort}')
-    UDPServerSocket.bind((localIP, localPort))
+    UDPServerSocket.bind((localIP, int(localPort)))
     info(f'Listening on {localIP}:{localPort}')
 
     while True:
