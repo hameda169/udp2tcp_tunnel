@@ -2,7 +2,7 @@ import socket
 import threading
 import sys
 import argparse
-from util import info
+from util import info, decode_packet, encode_packet
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--local', default='127.0.0.1:35493')
@@ -16,9 +16,6 @@ TIMEOUT = 10
 bufferSize = 1500
 
 TCPServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-UDPClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-UDPClientLock = threading.RLock()
 
 
 def handle_tcp_packet(connection: socket.socket, connection_address: str):
@@ -27,19 +24,19 @@ def handle_tcp_packet(connection: socket.socket, connection_address: str):
         while True:
             try:
                 connection.settimeout(TIMEOUT)
-                data = connection.recv(bufferSize)
+                data = decode_packet(connection.recv(bufferSize))
             except socket.timeout:
                 info(f'Socket timeout for {connection_address}')
                 break
 
-            with UDPClientLock:
-                info(f'Sending UDP from {connection_address} to {serverIP}:{serverPort}')
-                UDPClientSocket.sendto(data, (serverIP, int(serverPort)))
-                udp_data = UDPClientSocket.recvfrom(bufferSize)[0]
-                info(f'UDP packet of {connection_address} received from {serverIP}:{serverPort}')
+            udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            info(f'Sending UDP from {connection_address} to {serverIP}:{serverPort}')
+            udp_client_socket.sendto(data, (serverIP, int(serverPort)))
+            udp_data = udp_client_socket.recvfrom(bufferSize)[0]
+            info(f'UDP packet of {connection_address} received from {serverIP}:{serverPort}')
 
             info(f'Sending response of {connection_address}')
-            connection.send(udp_data)
+            connection.send(encode_packet(udp_data))
 
 
 def main():

@@ -4,7 +4,7 @@ import threading
 import time
 import argparse
 
-from util import info
+from util import info, encode_packet, decode_packet
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--local', default='127.0.0.1:20001')
@@ -44,8 +44,8 @@ def handle_udp_packet(message, address):
     try:
         with TCPClientLock:
             info(f'Sending data of {address} to {serverIP}:{serverPort}')
-            TCPClientSocket.sendall(message)
-            tcp_response = TCPClientSocket.recv(bufferSize)
+            TCPClientSocket.send(encode_packet(message))
+            tcp_response = decode_packet(TCPClientSocket.recv(bufferSize))
         if tcp_response == b'':
             info('Tcp response is empty')
             tcp_client_socket_is_not_valid = True
