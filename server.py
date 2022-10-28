@@ -16,23 +16,23 @@ TIMEOUT = 10
 bufferSize = 1500
 
 TCPServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+UDPClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
 def handle_tcp_packet(connection: socket.socket, connection_address: str):
-    info('Handling new socket')
+    info(f'Handling new socket from {connection_address}')
     with connection:
         while True:
             try:
                 connection.settimeout(TIMEOUT)
                 data = decode_packet(connection.recv(bufferSize))
-            except socket.timeout:
+            except (socket.timeout, ConnectionError):
                 info(f'Socket timeout for {connection_address}')
                 break
 
-            udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             info(f'Sending UDP from {connection_address} to {serverIP}:{serverPort}')
-            udp_client_socket.sendto(data, (serverIP, int(serverPort)))
-            udp_data = udp_client_socket.recvfrom(bufferSize)[0]
+            UDPClientSocket.sendto(data, (serverIP, int(serverPort)))
+            udp_data = UDPClientSocket.recvfrom(bufferSize)[0]
             info(f'UDP packet of {connection_address} received from {serverIP}:{serverPort}')
 
             info(f'Sending response of {connection_address}')
